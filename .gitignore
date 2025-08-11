@@ -1,0 +1,7 @@
+test
+test/
+MACOSX
+.DS_Store
+.vscode/
+config.test.yaml
+__pycache__/
