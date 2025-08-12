@@ -5,7 +5,7 @@ class YAMLHelper:
     def __init__(self, filename):
         self.filename = filename
         self.load_yaml()
-        self.check_necessary_keys(["OPENAI_API_KEY", "RSS", "Interests"])
+        self.check_necessary_keys(["API_KEY", "RSS", "Interests"])
 
     def load_yaml(self):
         with open(self.filename, 'r') as file:

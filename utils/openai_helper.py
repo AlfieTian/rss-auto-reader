@@ -21,7 +21,7 @@ class OpenAIHelper:
     def analyze_subject_from_abstract(self, abstract: str, target_subject: List[str]) -> bool:
         """Summarize given abstract and determine if it relates to the target subject"""
         prompt = f"Analyze the following abstract and determine if it relates to the subject: {', '.join(target_subject)}.\n\n\
-            Abstract:\n{abstract}\n\nAnswer with 'yes' or 'no'."
+Abstract:\n{abstract}\n\nAnswer with 'yes' or 'no'."
         try:
             response = self.client.responses.create(
                 model=self.model,
