@@ -8,7 +8,7 @@ import requests
 logger = getLogger(__name__)
 
 def summarize_selected_paper(config, entry):
-    summarizer = OpenAIHelper(api_key=config.data.get("OPENAI_API_KEY", ""), model=config.data.get("SUMMARIZER_MODEL", "gpt-5-mini"))
+    summarizer = OpenAIHelper(api_key=config.data.get("API_KEY", ""), model=config.data.get("SUMMARIZER_MODEL", "gpt-5-mini"), api_base_url=config.data.get("API_BASE_URL", None))
     link = entry.get("link", "")
     if not link:
         logger.warning("No link found for entry.")
@@ -70,7 +70,7 @@ def main():
         return
     logger.debug(f"Fetched {len(result['entries'])} entries from the feed.")
 
-    subject_analyzer = OpenAIHelper(config.data.get("OPENAI_API_KEY", ""), model=config.data.get("SELECTOR_MODEL", "gpt-5-nano"))
+    subject_analyzer = OpenAIHelper(api_key=config.data.get("API_KEY", ""), model=config.data.get("SELECTOR_MODEL", "gpt-5-nano"), api_base_url=config.data.get("API_BASE_URL", None))
 
     for entry in result['entries']:
         is_relevant = subject_analyzer.analyze_subject_from_abstract(
