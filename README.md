@@ -73,13 +73,10 @@
 python main.py
 ```
 
-### Advanced Options
+### Options
 ```bash
 # Use custom config file
 python main.py --config my-config.yaml
-
-# Enable debug mode
-python main.py --debug
 ```
 
 ## 📊 Example Output

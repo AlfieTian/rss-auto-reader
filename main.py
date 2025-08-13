@@ -18,11 +18,11 @@ def summarize_selected_paper(config, entry):
     file_size = int(requests.head(link, allow_redirects=True).headers.get("Content-Length", 0))
     if file_size / (1024 * 1024) > 10:
         # TODO: use file upload method to get rid of the limitation
-        logger.warning(f"File size is {file_size / (1024 * 1024):.2f} MB, skipping...")
+        logger.warning(f"File size is {file_size / (1024 * 1024):.2f} MB, no summary will be generated.")
         return
     logger.info(f"Summarizing paper: {entry['title']} from {link}")
     summary = summarizer.summarize_paper(link)
-    logger.info(f"Summary for {entry['title']}: {summary}")
+    logger.debug(f"Summary for {entry['title']}: {summary}")
 
     return summary
 
@@ -49,17 +49,17 @@ def send_message_to_telegram(config, text):
 def main():
     parser = ArgumentParser(description="RSS Auto Reader")
     parser.add_argument("--config", default="config.yaml", help="Path to the config file")
-    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+    # parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     args = parser.parse_args()
-
-    basicConfig(level=DEBUG if args.debug else INFO)
 
     # Load configuration
     config = YAMLHelper(args.config)
+    log_level = config.data.get("LOG_LEVEL", INFO)
+    basicConfig(level=log_level)
 
     rss_helper = RSSFeedHelper()
     rss_url = config.data.get("RSS", {}).get("feed_url", "")
-    logger.debug(f"Using RSS feed URL: {rss_url}")
+    logger.info(f"Using RSS feed URL: {rss_url}")
 
     # Process RSS feed
     try:
@@ -68,7 +68,7 @@ def main():
     except Exception as e:
         logger.error(f"Error fetching RSS feed: {e}")
         return
-    logger.debug(f"Fetched {len(result['entries'])} entries from the feed.")
+    logger.info(f"Fetched {len(result['entries'])} entries from the feed.")
 
     subject_analyzer = OpenAIHelper(api_key=config.data.get("API_KEY", ""), model=config.data.get("SELECTOR_MODEL", "gpt-5-nano"), api_base_url=config.data.get("API_BASE_URL", None))
 
@@ -84,7 +84,9 @@ def main():
                 message = f"📄 *{entry['title']}*\n\n{summary}\n\n🔗 [Read more]({entry['link']})"
                 send_message_to_telegram(config, message)
             else:
-                logger.warning(f"No summary available for entry: {entry['title']}")
+                message = f"📄 *{entry['title']}*\n\nThis is the abstract:\n\n{entry['content']}\n\n🔗 [Read more]({entry['link']})"
+                send_message_to_telegram(config, message)
+                logger.info(f"No summary available for entry: {entry['title']}")
         else:
             logger.debug(f"Ignoring entry: {entry['title']}")
 

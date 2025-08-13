@@ -1,4 +1,5 @@
-API_BASE_URL: https://api.openai.com
+LOG_LEVEL: INFO
+API_BASE_URL: https://api.openai.com/v1
 API_KEY: your_api_key_here
 SELECTOR_MODEL: gpt-5-nano
 SUMMARIZER_MODEL: gpt-5-mini

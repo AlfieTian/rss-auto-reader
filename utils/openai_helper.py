@@ -13,7 +13,7 @@ class OpenAIHelper:
             raise ValueError("OpenAI API key is required. Set OPENAI_API_KEY environment variable or pass api_key parameter")
         
         if api_base_url:
-            self.client = OpenAI(api_key=self.api_key, api_base_url=api_base_url)
+            self.client = OpenAI(api_key=self.api_key, base_url=api_base_url)
         else:
             self.client = OpenAI(api_key=self.api_key)
         self.model = model
@@ -43,11 +43,10 @@ Abstract:\n{abstract}\n\nAnswer with 'yes' or 'no'."
     def summarize_paper(self, file) -> str:
         """Summarize the paper uploaded"""
         role_prompt = f"You are an academic assistant. Summarize the user's uploaded paper using the fewest words possible. Output only the following template (exclude anything in brackets). Use 2-3 sentences per part, preserve key numbers, and avoid speculation, filler, or questions. No extra text before or after the template. \n\n\
-    TL;DR: \n\
-        ❓ Problem: [1-2 sentences] \n\
-        🛠️ Core Method: [2-3 sentences] \n\
-        📈 Main Results/Impact: [1-2 sentences] \n\
-        ⚠️ Limitation: [1-2 sentences] \n\n\
+    ❓ Problem: [1-2 sentences] \n\
+    🛠️ Core Method: [2-3 sentences] \n\
+    📈 Main Results/Impact: [1-2 sentences] \n\
+    ⚠️ Limitation: [1-2 sentences] \n\n\
 DON'T ASK ANYTHING MORE. JUST RESPOND."
         user_prompt = f"Please summarize the following paper:"
         try:
