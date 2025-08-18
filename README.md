@@ -21,7 +21,7 @@
 
 - Python 3.8+
 - OpenAI API Key
-- Telegram Bot Token
+~~- Telegram Bot Token~~(Optional now)
 - Internet connection
 
 ## 🚀 Installation

@@ -5,6 +5,8 @@ SELECTOR_MODEL: gpt-5-nano
 SUMMARIZER_MODEL: gpt-5-mini
 TELEGRAM_BOT_TOKEN: your_telegram_bot_token_here
 TELEGRAM_CHAT_ID: your_telegram_chat_id_here
+# Uncomment the following line and comment the two above to enable file output
+# OUTPUT_FILE: /path/to/your/output/file.txt
 RSS:
     feed_url: https://rss.arxiv.org/rss/cs.ai+cs.cl+cs.cv
     name: "Arxiv AI Papers"
