@@ -2,6 +2,7 @@ import os
 from typing import List, Dict, Optional
 from openai import OpenAI
 from logging import getLogger
+import textwrap
 
 logger = getLogger(__name__)
 
@@ -40,14 +41,26 @@ Abstract:\n{abstract}\n\nAnswer with 'yes' or 'no'."
             logger.error(f"Error analyzing subject from abstract: {e}")
             raise Exception(f"Failed to analyze subject from abstract: {e}")
 
-    def summarize_paper(self, file) -> str:
+    def summarize_paper_message(self, file) -> str:
         """Summarize the paper uploaded"""
-        role_prompt = f"You are an academic assistant. Summarize the user's uploaded paper using the fewest words possible. Output only the following template (exclude anything in brackets). Use 2-3 sentences per part, preserve key numbers, and avoid speculation, filler, or questions. No extra text before or after the template. \n\n\
-    ❓ Problem: [1-2 sentences] \n\
-    🛠️ Core Method: [2-3 sentences] \n\
-    📈 Main Results/Impact: [1-2 sentences] \n\
-    ⚠️ Limitation: [1-2 sentences] \n\n\
-DON'T ASK ANYTHING MORE. JUST RESPOND."
+        role_prompt = textwrap.dedent("""\
+                                      You are an academic assistant. Summarize the user's uploaded paper using the fewest words possible. 
+                                      Output only the following template (exclude anything in brackets). Use 2-3 sentences per part, preserve key numbers, 
+                                      and avoid speculation, filler, or questions. No extra text before or after the template.
+                                      ❓ Problems: 
+                                        [1-2 sentences]
+
+                                      🛠️ Core Method: 
+                                        [2-3 sentences]
+
+                                      📈 Main Results/Impact: 
+                                        [1-2 sentences]
+
+                                      ⚠️ Limitation: 
+                                        [1-2 sentences]
+
+                                      DON'T ASK ANYTHING MORE. JUST RESPOND.
+                                      """).strip()
         user_prompt = f"Please summarize the following paper:"
         try:
             response = self.client.responses.create(
@@ -85,27 +98,79 @@ DON'T ASK ANYTHING MORE. JUST RESPOND."
         except Exception as e:
             logger.error(f"Error summarizing paper: {e}")
             raise Exception(f"Failed to summarize paper: {e}")
+        
+    def summarize_paper_markdown(self, file) -> str:
+        """Summarize the paper uploaded in Markdown format"""
+        role_prompt = textwrap.dedent("""\
+            You are an academic assistant. Summarize the user's uploaded paper using the fewest words possible.
+            Output using the following template (exclude anything in brackets) in Markdown format (4 H2 titles).
+            Use 2-3 sentences per part, preserve key numbers, and avoid speculation or questions.
+            No extra text before or after the template.
+
+            ## ❓ Problems:
+            [1-2 sentences]
+
+            ## 🛠️ Core Method:
+            [2-3 sentences]
+
+            ## 📈 Main Results/Impact:
+            [1-2 sentences]
+
+            ## ⚠️ Limitations:
+            [1-2 sentences]
+        """).strip('\n')
+        print(role_prompt)
+        exit()
+        user_prompt = f"Please summarize the following paper:"
+        try:
+            response = self.client.responses.create(
+                model=self.model,
+                input=[
+                    {
+                        "role": "system",
+                        "content": [
+                            {
+                                "type": "input_text",
+                                "text": role_prompt
+                            }
+                        ]
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "input_text",
+                                "text": user_prompt
+                            },
+                            {
+                                "type": "input_file",
+                                "file_url": file
+                            }
+                        ]
+                    }
+                ],
+                temperature=1,
+                reasoning={"effort": "low"},
+            )
+            logger.debug(f"OpenAI response: {response}")
+
+            return response.output_text
+        except Exception as e:
+            logger.error(f"Error summarizing paper: {e}")
+            raise Exception(f"Failed to summarize paper: {e}")
 
 if __name__ == "__main__":
+    import os
+    api_key = os.getenv("OPENAI_API_KEY")
+
     # Example usage
-    try:
-        ai = OpenAIHelper()
-        
-        sample_text = """
-        Artificial intelligence is transforming industries worldwide. From healthcare 
-        to finance, AI technologies are being integrated to improve efficiency and 
-        decision-making processes. However, concerns about job displacement and 
-        ethical implications remain significant challenges.
-        """
-        
-        print("Summary:", ai.summarize_text(sample_text, max_length=50))
-        print("Sentiment:", ai.analyze_sentiment(sample_text))
-        print("Keywords:", ai.extract_keywords(sample_text))
-        print("Tags:", ai.generate_tags(sample_text))
-        
-        categories = ["Technology", "Business", "Health", "Politics"]
-        print("Category:", ai.classify_content(sample_text, categories))
-        
-    except Exception as e:
-        print(f"Error: {e}")
-        print("Make sure to set your OPENAI_API_KEY environment variable")
+    ai = OpenAIHelper(api_key)
+    sample_text = """
+    Artificial intelligence is transforming industries worldwide. From healthcare
+    to finance, AI technologies are being integrated to improve efficiency and
+    decision-making processes. However, concerns about job displacement and
+    ethical implications remain significant challenges.
+    """
+
+    # ai.summarize_paper_markdown("https://arxiv.org/abs/2504.17728")
+    ai.summarize_paper_message("https://arxiv.org/abs/2504.17728")

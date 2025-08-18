@@ -4,10 +4,11 @@ from utils.openai_helper import OpenAIHelper
 from argparse import ArgumentParser
 from logging import basicConfig, INFO, DEBUG, getLogger, ERROR, WARN
 import requests
+import os
 
 logger = getLogger(__name__)
 
-def summarize_selected_paper(config, entry):
+def summarize_selected_paper(config, entry, file_mode=False):
     summarizer = OpenAIHelper(api_key=config.data.get("API_KEY", ""), model=config.data.get("SUMMARIZER_MODEL", "gpt-5-mini"), api_base_url=config.data.get("API_BASE_URL", None))
     link = entry.get("link", "")
     if not link:
@@ -21,7 +22,10 @@ def summarize_selected_paper(config, entry):
         logger.warning(f"File size is {file_size / (1024 * 1024):.2f} MB, no summary will be generated.")
         return
     logger.info(f"Summarizing paper: {entry['title']} from {link}")
-    summary = summarizer.summarize_paper(link)
+    if file_mode:
+        summary = summarizer.summarize_paper_markdown(link)
+    else:
+        summary = summarizer.summarize_paper_message(link)
     logger.debug(f"Summary for {entry['title']}: {summary}")
 
     return summary
@@ -57,6 +61,14 @@ def main():
     log_level = config.data.get("LOG_LEVEL", INFO)
     basicConfig(level=log_level)
 
+    if config.data.get("OUTPUT_FILE") and not (config.data.get("TELEGRAM_BOT_TOKEN") and config.data.get("TELEGRAM_CHAT_ID")):
+        output_file = config.data.get("OUTPUT_FILE")
+        logger.info(f"Using output file: {output_file}")
+        save_path = os.path.dirname(output_file)
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+            logger.info(f"Created output directory: {save_path}")
+
     rss_helper = RSSFeedHelper()
     rss_url = config.data.get("RSS", {}).get("feed_url", "")
     logger.info(f"Using RSS feed URL: {rss_url}")
@@ -79,14 +91,31 @@ def main():
 
         if is_relevant:
             logger.info(f"Relevant entry found: {entry['title']}")
-            summary = summarize_selected_paper(config, entry)
-            if summary:
-                message = f"📄 *{entry['title']}*\n\n{summary}\n\n🔗 [Read more]({entry['link']})"
+            
+            if config.data.get("TELEGRAM_BOT_TOKEN") and config.data.get("TELEGRAM_CHAT_ID"):
+                summary = summarize_selected_paper(config, entry)
+                if summary:
+                    message = f"📄 *{entry['title']}*\n\n{summary}\n\n🔗 [Read more]({entry['link']})"
+                    logger.info(f"Summary generated for entry: {entry['title']}")
+                else:
+                    abstract = entry.get("content", "")
+                    abstract = abstract.split('Abstract:')[1] if 'Abstract:' in abstract else abstract
+                    message = f"📄 *{entry['title']}*\n\nThis is the abstract:\n\n{abstract}\n\n🔗 [Read more]({entry['link']})"
+                    logger.info(f"No summary available for entry: {entry['title']}")
                 send_message_to_telegram(config, message)
+            elif config.data.get("OUTPUT_FILE"):
+                summary = summarize_selected_paper(config, entry, file_mode=True)
+                if summary:
+                    text = f"# {entry['title']}\n\n{summary}\n\n[Read more]({entry['link']})"
+                else:
+                    abstract = entry.get("content", "")
+                    abstract = abstract.split('Abstract:')[1] if 'Abstract:' in abstract else abstract
+                    text = f"# {entry['title']}\n\n## Abstract:\n\n{abstract}\n\n[Read more]({entry['link']})"
+                with open(config.data.get("OUTPUT_FILE"), "a") as f:
+                    f.write(text + "\n\n")
             else:
-                message = f"📄 *{entry['title']}*\n\nThis is the abstract:\n\n{entry['content']}\n\n🔗 [Read more]({entry['link']})"
-                send_message_to_telegram(config, message)
-                logger.info(f"No summary available for entry: {entry['title']}")
+                logger.error(f"No output method configured for entry: {entry['title']}")
+                raise ValueError("No output method configured. Please set TELEGRAM_BOT_TOKEN or OUTPUT_FILE in the config.")
         else:
             logger.debug(f"Ignoring entry: {entry['title']}")
 
