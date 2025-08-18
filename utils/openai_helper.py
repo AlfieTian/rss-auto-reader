@@ -119,8 +119,6 @@ Abstract:\n{abstract}\n\nAnswer with 'yes' or 'no'."
             ## ⚠️ Limitations:
             [1-2 sentences]
         """).strip('\n')
-        print(role_prompt)
-        exit()
         user_prompt = f"Please summarize the following paper:"
         try:
             response = self.client.responses.create(
