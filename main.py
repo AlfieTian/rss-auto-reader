@@ -9,7 +9,7 @@ import os
 logger = getLogger(__name__)
 
 def summarize_selected_paper(config, entry, file_mode=False):
-    summarizer = OpenAIHelper(api_key=config.data.get("API_KEY", ""), model=config.data.get("SUMMARIZER_MODEL", "gpt-5-mini"), api_base_url=config.data.get("API_BASE_URL", None))
+    summarizer = OpenAIHelper(api_key=config.data.get("API_KEY", ""), model=config.data.get("SUMMARIZER_MODEL", "gpt-5-mini"), api_base_url=config.data.get("API_BASE_URL", None), reasoning=config.data.get("SUMMARIZER_MODEL_REASONING", None))
     link = entry.get("link", "")
     if not link:
         logger.warning("No link found for entry.")
@@ -82,11 +82,11 @@ def main():
         return
     logger.info(f"Fetched {len(result['entries'])} entries from the feed.")
 
-    subject_analyzer = OpenAIHelper(api_key=config.data.get("API_KEY", ""), model=config.data.get("SELECTOR_MODEL", "gpt-5-nano"), api_base_url=config.data.get("API_BASE_URL", None))
+    subject_analyzer = OpenAIHelper(api_key=config.data.get("API_KEY", ""), model=config.data.get("SELECTOR_MODEL", "gpt-5-nano"), api_base_url=config.data.get("API_BASE_URL", None), reasoning=config.data.get("SELECTOR_MODEL_REASONING", None))
 
     for entry in result['entries']:
         is_relevant = subject_analyzer.analyze_subject_from_abstract(
-            entry['content'], config.data.get("Interests", [])
+            entry['content'], config.data.get("INTERESTS", []), config.data.get("EXCLUSIONS", [])
         )
 
         if is_relevant:

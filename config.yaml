@@ -2,7 +2,11 @@ LOG_LEVEL: INFO
 API_BASE_URL: https://api.openai.com/v1
 API_KEY: your_api_key_here
 SELECTOR_MODEL: gpt-5-nano
+# Comment the following line if the model is not capable of reasoning
+SELECTOR_MODEL_REASONING: low
 SUMMARIZER_MODEL: gpt-5-mini
+# Comment the following line if the model is not capable of reasoning
+SUMMARIZER_MODEL_REASONING: low
 TELEGRAM_BOT_TOKEN: your_telegram_bot_token_here
 TELEGRAM_CHAT_ID: your_telegram_chat_id_here
 # Uncomment the following line and comment the two above to enable file output
@@ -10,5 +14,8 @@ TELEGRAM_CHAT_ID: your_telegram_chat_id_here
 RSS:
     feed_url: https://rss.arxiv.org/rss/cs.ai+cs.cl+cs.cv
     name: "Arxiv AI Papers"
-Interests:
+INTERESTS:
   - "LLM Inference"
+
+EXCLUSIONS:
+  - "Robots"

@@ -21,7 +21,7 @@
 
 - Python 3.8+
 - OpenAI API Key
-~~- Telegram Bot Token~~(Optional now)
+- ~~Telegram Bot Token~~(Optional now)
 - Internet connection
 
 ## 🚀 Installation
@@ -50,20 +50,31 @@
    cp config.yaml.example config.yaml
    ```
 
-2. **Update `config.yaml` with your credentials**
+2. **Update `config.yaml`**
+   
+   Fill in your API key and model name, and specify any subjects you’re interested in or want to exclude. You can choose to send the summary to a Telegram bot or save it to a Markdown file.
+
    ```yaml
-   OPENAI_API_KEY: your_openai_api_key_here
-   SELECTOR_MODEL: gpt-5-nano      # Model for filtering papers
-   SUMMARIZER_MODEL: gpt-5-mini    # Model for summarization
+   API_BASE_URL: https://api.openai.com/v1
+   API_KEY: your_api_key_here
+   SELECTOR_MODEL: gpt-5-nano
+   # Comment the following line if the model is not capable of reasoning
+   SELECTOR_MODEL_REASONING: low
+   SUMMARIZER_MODEL: gpt-5-mini
+   # Comment the following line if the model is not capable of reasoning
+   SUMMARIZER_MODEL_REASONING: low
    TELEGRAM_BOT_TOKEN: your_telegram_bot_token_here
    TELEGRAM_CHAT_ID: your_telegram_chat_id_here
+   # Uncomment the following line and comment the two above to enable file output
+   # OUTPUT_FILE: /path/to/your/output/file.txt
    RSS:
-     feed_url: https://rss.arxiv.org/rss/cs.ai+cs.cl+cs.cv
-     name: "Arxiv AI Papers"
-   Interests:
-     - "LLM Inference"
-     - "Machine Learning"
-     - "Computer Vision"
+      feed_url: https://rss.arxiv.org/rss/cs.ai+cs.cl+cs.cv
+      name: "Arxiv AI Papers"
+   INTERESTS:
+   - "LLM Inference"
+
+   EXCLUSIONS:
+   - "Robots"
    ```
 
 ## 🎯 Usage
