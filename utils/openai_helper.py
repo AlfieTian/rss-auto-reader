@@ -23,10 +23,39 @@ class OpenAIHelper:
     def analyze_subject_from_abstract(self, abstract: str, target_subject: List[str], exclude_subject: List[str]) -> bool:
         """Summarize given abstract and determine if it relates to the target subject"""
 
-        prompt = f"Analyze the following abstract and determine if it relates to the subject: {', '.join(target_subject)}. \
-But if it relates to the subject: {', '.join(exclude_subject)}, then answer with 'no'.\n\n\
-Abstract: {abstract} \n\n\
-Answer with 'yes' or 'no'."
+        # Normalize inputs so None/strings won't crash join()
+        def _as_list(value):
+            if value is None:
+                return []
+            if isinstance(value, str):
+                return [value]
+            try:
+                return list(value)
+            except TypeError:
+                return [str(value)]
+
+        targets = _as_list(target_subject)
+        exclusions = _as_list(exclude_subject)
+
+        head = textwrap.dedent("""
+            You are a binary classifier. Follow these rules strictly and output only yes or no in lowercase.
+
+            Targets: {targets}
+            Exclusions: {exclusions}
+
+            Rules:
+            - If the abstract mainly talks about any Exclusions -> no.
+            - Else if it relates to any Targets -> yes.
+            - If both appear -> no.
+            - If unclear/insufficient info/off-topic -> no.
+            - No explanation, no quotes, only yes or no.
+
+            Abstract:
+        """).format(
+            targets=", ".join(targets) if targets else "(none)",
+            exclusions=", ".join(exclusions) if exclusions else "(none)",
+        ).strip()
+        prompt = f"{head}\n{abstract}\n\nAnswer:\n"
         try:
             if self.reasoning:
                 response = self.client.responses.create(
@@ -40,7 +69,7 @@ Answer with 'yes' or 'no'."
                     temperature=1,
                     reasoning={"effort": self.reasoning},
                 )
-                logger.debug(f"OpenAI response: {response}")
+                logger.debug(f"OpenAI response: {response.output_text}")
                 return response.output_text.lower() == 'yes'
             else:
                 response = self.client.responses.create(
@@ -247,12 +276,12 @@ if __name__ == "__main__":
 
     # Example usage
     ai = OpenAIHelper(api_key, model="gpt-4.1-mini")
-    sample_text = """
+    sample_text = textwrap.dedent("""
     Artificial intelligence is transforming industries worldwide. From healthcare
     to finance, AI technologies are being integrated to improve efficiency and
     decision-making processes. However, concerns about job displacement and
     ethical implications remain significant challenges.
-    """
-    ai.analyze_subject_from_abstract(sample_text, ["AI", "Machine Learning"], ["Robots"])
+    """)
+    print(ai.analyze_subject_from_abstract(sample_text, ["AI", "Machine Learning"], ["Robots"]))
     # ai.summarize_paper_markdown("https://arxiv.org/abs/2504.17728")
     # ai.summarize_paper_message("https://arxiv.org/abs/2504.17728")

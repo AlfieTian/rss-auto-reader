@@ -85,6 +85,7 @@ def main():
     subject_analyzer = OpenAIHelper(api_key=config.data.get("API_KEY", ""), model=config.data.get("SELECTOR_MODEL", "gpt-5-nano"), api_base_url=config.data.get("API_BASE_URL", None), reasoning=config.data.get("SELECTOR_MODEL_REASONING", None))
 
     for entry in result['entries']:
+        logger.info(f"Processing entry: {entry['title']}")
         is_relevant = subject_analyzer.analyze_subject_from_abstract(
             entry['content'], config.data.get("INTERESTS", []), config.data.get("EXCLUSIONS", [])
         )
