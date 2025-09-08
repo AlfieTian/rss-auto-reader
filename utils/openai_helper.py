@@ -69,7 +69,7 @@ class OpenAIHelper:
                     temperature=1,
                     reasoning={"effort": self.reasoning},
                 )
-                logger.debug(f"OpenAI response: {response.output_text}")
+                logger.debug(f"OpenAI response: {response}")
                 return response.output_text.lower() == 'yes'
             else:
                 response = self.client.responses.create(
