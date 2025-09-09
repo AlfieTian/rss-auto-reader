@@ -1,6 +1,7 @@
 from utils.yaml_helper import YAMLHelper
 from utils.rss_helper import RSSFeedHelper
 from utils.openai_helper import OpenAIHelper
+from utils.telegram_bot_helper import TelegramBotHelper
 from argparse import ArgumentParser
 from logging import basicConfig, INFO, DEBUG, getLogger, ERROR, WARN
 import requests
@@ -17,9 +18,9 @@ def summarize_selected_paper(config, entry, file_mode=False):
 
     link = link.replace("https://arxiv.org/abs/", "https://arxiv.org/pdf/") + ".pdf"
     file_size = int(requests.head(link, allow_redirects=True).headers.get("Content-Length", 0))
-    if file_size / (1024 * 1024) > 10:
+    if file_size / (1000 * 1000) > 10:
         # TODO: use file upload method to get rid of the limitation
-        logger.warning(f"File size is {file_size / (1024 * 1024):.2f} MB, no summary will be generated.")
+        logger.warning(f"File size is {file_size / (1000 * 1000):.2f} M, no summary will be generated.")
         return
     logger.info(f"Summarizing paper: {entry['title']} from {link}")
     if file_mode:
@@ -36,18 +37,14 @@ def send_message_to_telegram(config, text):
     if not telegram_bot_token or not telegram_chat_id:
         logger.warning("Telegram bot token or chat ID is not set.")
         return
-
-    # Send message to Telegram
-    telegram_api_url = f"https://api.telegram.org/bot{telegram_bot_token}/sendMessage"
-    payload = {
-        "chat_id": telegram_chat_id,
-        "text": text
-    }
-    response = requests.post(telegram_api_url, json=payload)
-    if response.status_code == 200:
-        logger.info("Message sent to Telegram successfully.")
-    else:
-        logger.error(f"Failed to send message to Telegram: {response.text}")
+    telegram_helper = TelegramBotHelper(telegram_bot_token)
+    try:
+        response = telegram_helper.send_message(chat_id=telegram_chat_id, text=text, parse_mode="html", disable_web_page_preview=True)
+        logger.info("Message sent to Telegram.")
+        logger.debug(f"Telegram response: {response}")
+    except Exception as e:
+        logger.error(f"Error sending message to Telegram: {e}")
+        logger.debug(f"Failed message content: {text}")
 
 
 def main():
@@ -84,8 +81,8 @@ def main():
 
     subject_analyzer = OpenAIHelper(api_key=config.data.get("API_KEY", ""), model=config.data.get("SELECTOR_MODEL", "gpt-5-nano"), api_base_url=config.data.get("API_BASE_URL", None), reasoning=config.data.get("SELECTOR_MODEL_REASONING", None))
 
-    for entry in result['entries']:
-        logger.info(f"Processing entry: {entry['title']}")
+    for index, entry in enumerate(result['entries']):
+        logger.info(f"Processing entry {index + 1}: {entry['title']}")
         is_relevant = subject_analyzer.analyze_subject_from_abstract(
             entry['content'], config.data.get("INTERESTS", []), config.data.get("EXCLUSIONS", [])
         )
@@ -96,12 +93,12 @@ def main():
             if config.data.get("TELEGRAM_BOT_TOKEN") and config.data.get("TELEGRAM_CHAT_ID"):
                 summary = summarize_selected_paper(config, entry)
                 if summary:
-                    message = f"📄 *{entry['title']}*\n\n{summary}\n\n🔗 [Read more]({entry['link']})"
+                    message = f"📄 <b>{entry['title']}</b>\n\n{summary}\n\n🔗 <a href=\"{entry['link']}\">Read more</a>"
                     logger.info(f"Summary generated for entry: {entry['title']}")
                 else:
                     abstract = entry.get("content", "")
                     abstract = abstract.split('Abstract:')[1] if 'Abstract:' in abstract else abstract
-                    message = f"📄 *{entry['title']}*\n\nThis is the abstract:\n\n{abstract}\n\n🔗 [Read more]({entry['link']})"
+                    message = f"📄 <b>{entry['title']}</b>\n\nThis is the abstract:\n\n{abstract}\n\n🔗 <a href=\"{entry['link']}\">Read more</a>"
                     logger.info(f"No summary available for entry: {entry['title']}")
                 send_message_to_telegram(config, message)
             elif config.data.get("OUTPUT_FILE"):

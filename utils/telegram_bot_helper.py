@@ -41,6 +41,8 @@ class TelegramBotHelper:
         
         try:
             response = requests.post(url, json=payload, timeout=10)
+            if response.status_code == 400:
+                raise Exception(f"Bad Request: {response.text}")
             response.raise_for_status()
             return response.json()
         except requests.RequestException as e:
