@@ -3,11 +3,12 @@ from utils.rss_helper import RSSFeedHelper
 from utils.openai_helper import OpenAIHelper
 from utils.telegram_bot_helper import TelegramBotHelper
 from argparse import ArgumentParser
-from logging import basicConfig, INFO, DEBUG, getLogger, ERROR, WARN
+from utils.logger import MyLogger
+from logging import INFO, DEBUG, WARNING, ERROR, CRITICAL
 import requests
 import os
+import html
 
-logger = getLogger(__name__)
 
 def summarize_selected_paper(config, entry, file_mode=False):
     summarizer = OpenAIHelper(api_key=config.data.get("API_KEY", ""), model=config.data.get("SUMMARIZER_MODEL", "gpt-5-mini"), api_base_url=config.data.get("API_BASE_URL", None), reasoning=config.data.get("SUMMARIZER_MODEL_REASONING", None))
@@ -47,16 +48,7 @@ def send_message_to_telegram(config, text):
         logger.debug(f"Failed message content: {text}")
 
 
-def main():
-    parser = ArgumentParser(description="RSS Auto Reader")
-    parser.add_argument("--config", default="config.yaml", help="Path to the config file")
-    # parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-    args = parser.parse_args()
-
-    # Load configuration
-    config = YAMLHelper(args.config)
-    log_level = config.data.get("LOG_LEVEL", INFO)
-    basicConfig(level=log_level)
+def main(config):
 
     if config.data.get("OUTPUT_FILE") and not (config.data.get("TELEGRAM_BOT_TOKEN") and config.data.get("TELEGRAM_CHAT_ID")):
         output_file = config.data.get("OUTPUT_FILE")
@@ -93,11 +85,13 @@ def main():
             if config.data.get("TELEGRAM_BOT_TOKEN") and config.data.get("TELEGRAM_CHAT_ID"):
                 summary = summarize_selected_paper(config, entry)
                 if summary:
+                    summary = html.escape(summary)
                     message = f"📄 <b>{entry['title']}</b>\n\n{summary}\n\n🔗 <a href=\"{entry['link']}\">Read more</a>"
                     logger.info(f"Summary generated for entry: {entry['title']}")
                 else:
                     abstract = entry.get("content", "")
                     abstract = abstract.split('Abstract:')[1] if 'Abstract:' in abstract else abstract
+                    abstract = html.escape(abstract)
                     message = f"📄 <b>{entry['title']}</b>\n\nThis is the abstract:\n\n{abstract}\n\n🔗 <a href=\"{entry['link']}\">Read more</a>"
                     logger.info(f"No summary available for entry: {entry['title']}")
                 send_message_to_telegram(config, message)
@@ -118,4 +112,13 @@ def main():
             logger.debug(f"Ignoring entry: {entry['title']}")
 
 if __name__ == "__main__":
-    main()
+    parser = ArgumentParser(description="RSS Auto Reader")
+    parser.add_argument("--config", default="config.yaml", help="Path to the config file")
+    # parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+
+    args = parser.parse_args()
+
+    config = YAMLHelper(args.config)
+    log_level = config.data.get("LOG_LEVEL", INFO)
+    logger = MyLogger("RSS-Auto-Reader", log_level=log_level)
+    main(config)
