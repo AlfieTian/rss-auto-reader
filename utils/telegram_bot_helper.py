@@ -2,7 +2,7 @@ import requests
 import json
 from typing import Optional, Dict, List, Union
 import time
-import logging
+from .logger import MyLogger
 
 
 class TelegramBotHelper:
@@ -12,8 +12,8 @@ class TelegramBotHelper:
         
         self.bot_token = bot_token
         self.base_url = f"https://api.telegram.org/bot{bot_token}"
-        self.logger = logging.getLogger(__name__)
-    
+        self.logger = MyLogger("TelegramBotHelper")
+
     def send_message(
         self, 
         chat_id: Union[str, int], 

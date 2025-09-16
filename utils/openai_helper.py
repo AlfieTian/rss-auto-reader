@@ -1,11 +1,10 @@
 import os
 from typing import List, Dict, Optional
 from openai import OpenAI
-from logging import getLogger
+from .logger import MyLogger
 import textwrap
 
-logger = getLogger(__name__)
-
+logger = MyLogger("OpenAIHelper")
 
 class OpenAIHelper:
     def __init__(self, api_key: Optional[str] = None, api_base_url: Optional[str] = None, model: str = "gpt-5-nano", reasoning: Optional[str] = None):
